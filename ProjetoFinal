@@ -1,0 +1,962 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct {
+    char rg[10];
+    char nome[100];
+    int idade;
+    struct {
+        int dia;
+        int mes;
+        int ano;
+    } entrada;
+} Registro;
+
+typedef struct EABB {
+    Registro* dados;  
+    struct EABB* filhoEsq;
+    struct EABB* filhoDir;
+} EABB;
+typedef struct {
+    EABB* raiz;
+    int qtde;
+} ABB;
+
+typedef struct elista {
+    Registro *dados;
+    struct elista *proximo;
+} ELista;
+
+typedef struct lista {
+    ELista *inicio;
+    int qtde;
+} Lista;
+
+typedef struct efila_padrao {
+    Registro *dados;
+    struct efila_padrao *proximo;
+} efila_padrao;
+
+typedef struct fila_padrao {
+    efila_padrao *head;
+    efila_padrao *tail;
+    int quantidade;
+} fila_padrao;
+
+#define limite_prioridade 20
+
+typedef struct fila_prioritaria {
+    Registro *heap[limite_prioridade];
+    int tamanho;
+} fila_prioritaria;
+
+#define inserir 1 
+//define a palavra inserir como 1
+#define remover 2 
+//define a palavra remover como 2
+//fica mais facil de entender do que colocar 1 e 2 no codigo
+#define pilha_limite 50
+
+typedef struct{
+    int tipo_operacao;
+    Registro paciente;
+} tipo_operacao;
+
+typedef struct{
+    tipo_operacao limite[pilha_limite];
+    int topo;
+}Pilha;
+
+int compararRegistros(Registro p1, Registro p2, int criterio) {
+    switch(criterio) {
+        case 1: return p1.entrada.ano - p2.entrada.ano;
+        case 2: return p1.entrada.mes - p2.entrada.mes;
+        case 3: return p1.entrada.dia - p2.entrada.dia;
+        case 4: return p1.idade - p2.idade;
+        default: return 0;
+    }
+}
+
+EABB* cria_vertice(Registro* paciente) {
+    EABB* novo = (EABB*)malloc(sizeof(EABB));
+    if(novo == NULL) {
+        printf("Erro ao alocar memória para novo vértice\n");
+        return NULL;
+    }
+    novo->filhoEsq = NULL;
+    novo->filhoDir = NULL;
+    novo->dados = paciente;  
+    return novo;
+}
+
+void inserirPacienteArvore(ABB* arvore, Registro* paciente, int criterio) {
+    EABB* novo = cria_vertice(paciente);
+    if(novo == NULL) return;
+
+    if (arvore->raiz == NULL) {
+        arvore->raiz = novo;
+    } else {
+        EABB* atual = arvore->raiz;
+        EABB* anterior = NULL;
+        while (atual != NULL) {
+            anterior = atual;
+            int cmp = compararRegistros(*paciente, *(atual->dados), criterio);
+            atual = (cmp < 0) ? atual->filhoEsq : atual->filhoDir;
+        }
+        if (compararRegistros(*paciente, *(anterior->dados), criterio) < 0)
+            anterior->filhoEsq = novo;
+        else
+            anterior->filhoDir = novo;
+    }
+    arvore->qtde++;
+}
+
+void in_ordem(EABB* raiz) {
+    if (raiz != NULL) {
+        in_ordem(raiz->filhoEsq);
+        printf("\nNome: %s\n", raiz->dados->nome);
+        printf("Idade: %d\n", raiz->dados->idade);
+        printf("RG: %s\n", raiz->dados->rg);
+        printf("Data: %02d/%02d/%04d\n", raiz->dados->entrada.dia,
+               raiz->dados->entrada.mes, raiz->dados->entrada.ano);
+        in_ordem(raiz->filhoDir);
+    }
+}
+
+void liberar_arvore(EABB* vertice) {
+    if (vertice != NULL) {
+        liberar_arvore(vertice->filhoEsq);
+        liberar_arvore(vertice->filhoDir);
+        free(vertice);
+    }
+}
+void mostraRegistroAno(Lista* lista) {
+    ABB arvore = {NULL, 0};
+    ELista* atual = lista->inicio;
+    while(atual != NULL) {
+        inserirPacienteArvore(&arvore, atual->dados, 1);
+        atual = atual->proximo;
+    }
+    printf("\nRegistros ordenados por ano:\n");
+    in_ordem(arvore.raiz);
+    liberar_arvore(arvore.raiz);
+}
+
+void mostraRegistroMes(Lista* lista) {
+    ABB arvore = {NULL, 0};
+    ELista* atual = lista->inicio;
+    while(atual != NULL) {
+        inserirPacienteArvore(&arvore, atual->dados, 2);
+        atual = atual->proximo;
+    }
+    printf("\nRegistros ordenados por mês:\n");
+    in_ordem(arvore.raiz);
+    liberar_arvore(arvore.raiz);
+}
+
+void mostraRegistroDia(Lista* lista) {
+    ABB arvore = {NULL, 0};
+    ELista* atual = lista->inicio;
+    while(atual != NULL) {
+        inserirPacienteArvore(&arvore, atual->dados, 3);
+        atual = atual->proximo;
+    }
+    printf("\nRegistros ordenados por dia:\n");
+    in_ordem(arvore.raiz);
+    liberar_arvore(arvore.raiz);
+}
+
+void mostraRegistroIdade(Lista* lista) {
+    ABB arvore = {NULL, 0};
+    ELista* atual = lista->inicio;
+    while(atual != NULL) {
+        inserirPacienteArvore(&arvore, atual->dados, 4);
+        atual = atual->proximo;
+    }
+    printf("\nRegistros ordenados por idade:\n");
+    in_ordem(arvore.raiz);
+    liberar_arvore(arvore.raiz);
+}
+
+void criarLista(Lista *l) {
+    l->inicio = NULL;
+    l->qtde = 0;
+}
+
+void cadastrarPaciente(Lista *l) {
+    Registro *r = (Registro *)malloc(sizeof(Registro));
+    if(r == NULL) {
+        printf("Erro ao alocar memória para novo registro\n");
+        return;
+    }
+
+    printf("Nome: ");
+    fgets(r->nome, 100, stdin);
+    size_t len = strlen(r->nome);
+    if (len > 0 && r->nome[len-1] == '\n') {
+        r->nome[len-1] = '\0';
+    } else {
+        int c;
+        while ((c = getchar()) != '\n' && c != EOF);
+    }
+    printf("RG: ");
+    fgets(r->rg, 10, stdin);
+    r->rg[strcspn(r->rg, "\n")] = '\0';
+    printf("Idade: ");
+    scanf("%d", &r->idade);
+    printf("Dia do cadastro: ");
+    scanf("%d", &r->entrada.dia);
+    printf("Mês do cadastro: ");
+    scanf("%d", &r->entrada.mes);
+    printf("Ano do cadastro: ");
+    scanf("%d", &r->entrada.ano);
+    getchar();
+
+    ELista *novo = (ELista *)malloc(sizeof(ELista));
+    if(novo == NULL) {
+        printf("Erro ao alocar memória para novo nó\n");
+        free(r);
+        return;
+    }
+    novo->dados = r;
+    novo->proximo = l->inicio;
+    l->inicio = novo;
+    l->qtde++;
+
+    FILE *arq = fopen("pacientes.txt", "a");
+    if (arq != NULL) {
+        fprintf(arq, "%s\n", r->rg);
+        fprintf(arq, "%s\n", r->nome);
+        fprintf(arq, "%d\n", r->idade);
+        fprintf(arq, "%d\n", r->entrada.dia);
+        fprintf(arq, "%d\n", r->entrada.mes);
+        fprintf(arq, "%d\n", r->entrada.ano);
+        fclose(arq);
+    } else {
+        printf("Erro ao salvar no arquivo.\n");
+    }
+
+    printf("Paciente cadastrado com sucesso!\n");
+}
+
+void mostrarLista(Lista *l) {
+    ELista *aux = l->inicio;
+    if (aux == NULL) {
+        printf("Lista vazia.\n");
+        return;
+    }
+
+    printf("\n=== Lista de Pacientes ===\n");
+    while (aux != NULL) {
+        printf("RG: %s | Nome: %s | Idade: %d\n", aux->dados->rg, aux->dados->nome,
+               aux->dados->idade);
+        aux = aux->proximo;
+    }
+}
+
+ELista *buscarPaciente(Lista *l, char *id) {
+    ELista *aux = l->inicio;
+    while (aux != NULL) {
+        if (strcmp(aux->dados->rg, id) == 0) 
+            return aux;
+        aux = aux->proximo;
+    }
+    return NULL;
+}
+
+void consultarPaciente(Lista *l) {
+    char rg[10];
+    printf("Digite o RG do paciente: ");
+    fgets(rg, 20, stdin);
+    rg[strcspn(rg, "\n")] = '\0';
+
+    ELista *p = buscarPaciente(l, rg);
+    if (p) {
+        printf("\nPaciente encontrado:\n");
+        printf("Nome: %s\n", p->dados->nome);
+        printf("Idade: %d\n", p->dados->idade);
+        printf("Data de cadastro: %02d/%02d/%04d\n", p->dados->entrada.dia,
+               p->dados->entrada.mes, p->dados->entrada.ano);
+    } else {
+        printf("Paciente com RG %s não encontrado.\n", rg);
+    }
+}
+
+void atualizarPaciente(Lista *l) {
+    char rg[15];
+    printf("Digite o RG do paciente a atualizar: ");
+    scanf(" %[^\n]", rg);
+    ELista *pac = buscarPaciente(l, rg);
+    if (pac) {
+        printf("Novo nome: ");
+        getchar();
+        fgets(pac->dados->nome, 100, stdin);
+        pac->dados->nome[strcspn(pac->dados->nome, "\n")] = '\0';
+
+        printf("Nova idade: ");
+        scanf("%d", &pac->dados->idade);
+
+        printf("Nova data de cadastro (dia mês ano): ");
+        scanf("%d %d %d", &pac->dados->entrada.dia, &pac->dados->entrada.mes, &pac->dados->entrada.ano);
+
+        printf("Dados atualizados com sucesso!\n");
+    } else {
+        printf("Paciente com RG %s não encontrado.\n", rg);
+    }
+}
+
+
+void removerPaciente(Lista *l) {
+    char rg[10];
+    printf("Digite o RG do paciente a remover: ");
+    fgets(rg, sizeof(rg), stdin);
+    rg[strcspn(rg, "\n")] = '\0';
+
+    ELista *atual = l->inicio;
+    ELista *anterior = NULL;
+
+    while (atual != NULL && strcmp(atual->dados->rg, rg) != 0) {
+        anterior = atual;
+        atual = atual->proximo;
+    }
+
+    if (atual == NULL) {
+        printf("Paciente com RG não encontrado.\n");
+        return;
+    }
+
+    if (anterior == NULL)
+        l->inicio = atual->proximo;
+    else
+        anterior->proximo = atual->proximo;
+
+    free(atual->dados);
+    free(atual);
+    l->qtde--;
+
+    printf("Paciente removido com sucesso!\n");
+}
+
+void criar_fila(fila_padrao *f) {
+    f->head = NULL;
+    f->tail = NULL;
+    f->quantidade = 0;
+}
+
+void enfileirar_paciente(fila_padrao *f, Registro *r) {
+    efila_padrao *novo = (efila_padrao *)malloc(sizeof(efila_padrao));
+    if(novo == NULL) {
+        printf("Erro ao alocar memória para fila\n");
+        return;
+    }
+    novo->dados = r;
+    novo->proximo = NULL;
+
+    if (f->head == NULL) {
+        f->head = f->tail = novo;
+    } else {
+        f->tail->proximo = novo;
+        f->tail = novo;
+    }
+    f->quantidade++;
+    printf("Paciente enfileirado.\n");
+}
+
+Registro *desinfileirar_paciente(fila_padrao *f) {
+    if (f->head == NULL) {
+        printf("A fila está vazia.\n");
+        return NULL;
+    }
+
+    efila_padrao *no = f->head;
+    Registro *r = no->dados;
+    f->head = no->proximo;
+
+    if (f->head == NULL) {
+        f->tail = NULL;
+    }
+
+    free(no);
+    f->quantidade--;
+    return r;
+}
+
+void mostrar_fila(fila_padrao *f) {
+    efila_padrao *aux = f->head;
+    if (aux == NULL) {
+        printf("Fila vazia.\n");
+        return;
+    }
+
+    printf("\n=== Fila de Pacientes ===\n");
+    while (aux != NULL) {
+        printf("Nome: %s\n", aux->dados->nome);
+        printf("RG: %s\n", aux->dados->rg);
+        printf("Idade: %d\n\n", aux->dados->idade);
+        aux = aux->proximo;
+    }
+}
+
+// Funções de fila prioritária
+void inicio_fila_prioritaria(fila_prioritaria *f) {
+    f->tamanho = 0;
+}
+
+void trocar_heap(Registro **a, Registro **b) {
+    Registro *temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+void enfileirar_prioritario(fila_prioritaria *f, Registro *r) {
+    if (f->tamanho >= limite_prioridade) {
+        printf("Fila prioritaria cheia.\n");
+        return;
+    }
+
+    int i = f->tamanho;
+    f->heap[i] = r;
+    f->tamanho++;
+
+    while(i > 0) {
+        int pai = (i - 1) / 2;
+        if (f->heap[pai]->idade < f->heap[i]->idade) {
+            trocar_heap(&f->heap[pai], &f->heap[i]);
+            i = pai;
+        } else {
+            break;
+        }
+    }
+    printf("Paciente enfileirado na fila prioritaria.\n");
+}
+
+Registro *desinfileirar_prioritario(fila_prioritaria *f) {
+    if(f->tamanho == 0) {
+        printf("Fila prioritaria vazia.\n");
+        return NULL;
+    }
+
+    Registro *maior = f->heap[0];
+    f->heap[0] = f->heap[f->tamanho - 1];
+    f->tamanho--;
+
+    int i = 0;
+    while (1) {
+        int filho_esq = 2 * i + 1;
+        int filho_dir = 2 * i + 2;
+        int maior_filho = i;
+
+        if (filho_esq < f->tamanho && f->heap[filho_esq]->idade > f->heap[maior_filho]->idade) {
+            maior_filho = filho_esq;
+        }
+        if (filho_dir < f->tamanho && f->heap[filho_dir]->idade > f->heap[maior_filho]->idade) {
+            maior_filho = filho_dir;
+        }
+        if (maior_filho == i) {
+            break;
+        }
+
+        trocar_heap(&f->heap[i], &f->heap[maior_filho]);
+        i = maior_filho;
+    }
+    return maior;
+}
+
+void mostrar_fila_prioritaria(fila_prioritaria *f) {
+    if (f->tamanho == 0) {
+        printf("Fila prioritária vazia.\n");
+        return;
+    }
+
+    printf("\n=== Fila Prioritária ===\n");
+    for (int i = 0; i < f->tamanho; i++) {
+        printf("Nome: %s\n", f->heap[i]->nome);
+        printf("Idade: %d\n", f->heap[i]->idade);
+        printf("RG: %s\n\n", f->heap[i]->rg);
+    }
+}
+
+// Funções de arquivo
+void salvar_lista(Lista* l) {
+    FILE* arq = fopen("pacientes.txt", "w");
+    if (arq == NULL) {
+        printf("Erro ao abrir o arquivo para salvar.\n");
+        return;
+    }
+
+    ELista* aux = l->inicio;
+    while (aux != NULL) {
+        fprintf(arq, "%s\n", aux->dados->rg);
+        fprintf(arq, "%s\n", aux->dados->nome);
+        fprintf(arq, "%d\n", aux->dados->idade);
+        fprintf(arq, "%d\n", aux->dados->entrada.dia);
+        fprintf(arq, "%d\n", aux->dados->entrada.mes);
+        fprintf(arq, "%d\n", aux->dados->entrada.ano);
+        aux = aux->proximo;
+    }
+
+    fclose(arq);
+    printf("Pacientes salvos no arquivo com sucesso!\n");
+}
+
+void carregar_lista(Lista *l) {
+    FILE *arq = fopen("pacientes.txt", "r");
+    if (arq == NULL) {
+        printf("Nenhum arquivo encontrado para carregar.\n");
+        return;
+    }
+
+    while (!feof(arq)) {
+        Registro *r = (Registro *)malloc(sizeof(Registro));
+        if(r == NULL) {
+            printf("Erro ao alocar memória para registro\n");
+            break;
+        }
+
+        if (fgets(r->rg, 10, arq) == NULL) {
+                free(r);
+                break;
+        }
+        fgetc(arq);
+
+        if (fgets(r->nome, 100, arq) == NULL) {
+            free(r);
+            break;
+        }
+        r->nome[strcspn(r->nome, "\n")] = '\0';
+
+        if (fscanf(arq, "%d", &r->idade) != 1 ||
+            fscanf(arq, "%d", &r->entrada.dia) != 1 ||
+            fscanf(arq, "%d", &r->entrada.mes) != 1 ||
+            fscanf(arq, "%d", &r->entrada.ano) != 1) {
+            free(r);
+            break;
+        }
+        fgetc(arq);
+
+        ELista *novo = (ELista *)malloc(sizeof(ELista));
+        if(novo == NULL) {
+            printf("Erro ao alocar memória para nó\n");
+            free(r);
+            break;
+        }
+        novo->dados = r;
+        novo->proximo = l->inicio;
+        l->inicio = novo;
+        l->qtde++;
+    }
+
+    fclose(arq);
+    printf("Pacientes carregados com sucesso!\n");
+}
+
+void limparLista(Lista *l) {
+    ELista *atual = l->inicio;
+    while (atual != NULL) {
+        ELista *proximo = atual->proximo;
+        free(atual->dados);
+        free(atual);
+        atual = proximo;
+    }
+    l->inicio = NULL;
+    l->qtde = 0;
+}
+
+void menuPrincipal() {
+    printf("\n======== Menu Principal ========\n");
+    printf("1 - Cadastrar\n");
+    printf("2 - Atendimento\n");
+    printf("3 - Atendimento Prioritário\n");
+    printf("4 - Pesquisa\n");
+    printf("5 - Desfazer\n");
+    printf("6 - Salvar\n");
+    printf("7 - Carregar\n");
+    printf("8 - Sobre\n");
+    printf("9 - Limpar lista\n");
+    printf("0 - Sair\n");
+    printf("================================\n");
+    printf("Escolha: ");
+}
+
+void menuCadastro() {
+    printf("\n======= Menu de Cadastro =======\n");
+    printf("1 - Cadastrar paciente\n");
+    printf("2 - Consultar paciente\n");
+    printf("3 - Mostrar todos os pacientes\n");
+    printf("4 - Atualizar paciente\n");
+    printf("5 - Remover paciente\n");
+    printf("0 - Voltar\n");
+    printf("================================\n");
+    printf("Escolha: ");
+}
+
+void menu_atendimento() {
+    printf("\n====== Menu de Atendimento =====\n");
+    printf("1 - Enfileirar paciente\n");
+    printf("2 - Desinfileirar paciente\n");
+    printf("3 - Mostrar Fila\n");
+    printf("0 - Voltar\n");
+    printf("================================\n");
+    printf("Escolha: ");
+}
+
+void menu_atendimento_prioritario() {
+    printf("\n======= Menu de Atendimento Prioritário =======\n");
+    printf("1 - Enfileirar Paciente Prioritariamente\n");
+    printf("2 - Desinfileirar Paciente da Fila Prioritária\n");
+    printf("3 - Mostrar Fila Prioritária\n");
+    printf("0 - Voltar\n");
+    printf("=================================================\n");
+    printf("Escolha: ");
+}
+
+void sobre() {
+    printf("\n================ Sobre ================\n");
+    printf("Autores: Miguel Yudi Sakurai Savordelli\n");
+    printf("         & João Vitor de Freitas Daltoé\n");
+    printf("Ciclo: 7° Semestre\n");
+    printf("Curso: Engenharia de Automação e Controle\n");
+    printf("Disciplina: Estrutura de Dados - CCA230\n");
+    printf("Data: Maio de 2025\n");
+    printf("=======================================\n");
+}
+
+void Desfazer() {
+    printf("\n====== Menu para desfazer ======\n");
+    printf("1 - Operações realizadas\n");
+    printf("2 - Desfazer última operação\n");
+    printf("0 - Voltar\n");
+    printf("================================\n");
+    printf("Escolha:");
+}
+
+void menuPesquisa() {
+    printf("\n======= Menu de Pesquisa =======\n");
+    printf("1 - Mostrar ordenado por ano\n");
+    printf("2 - Mostrar ordenado por mês\n");
+    printf("3 - Mostrar ordenado por dia\n");
+    printf("4 - Mostrar ordenado por idade\n");
+    printf("0 - Voltar\n");
+    printf("================================\n");
+    printf("Escolha: ");
+}
+
+void inicia_pilha(Pilha *p){
+    p->topo = -1;
+}
+
+int pilha_vazia(Pilha *p){
+    return (p->topo == -1);
+}
+
+int pilha_cheia(Pilha *p){
+    return (p->topo == pilha_limite - 1);
+}
+
+void empilhar(Pilha *p, tipo_operacao operacao){
+    if (!pilha_cheia(p)){
+        p->limite[++p->topo] = operacao;
+    }
+}
+
+tipo_operacao desempilhar(Pilha *p){
+    tipo_operacao op_vazia = {0};
+    if (!pilha_vazia(p)){
+        return p->limite[p->topo--];
+    }
+    return op_vazia;
+}
+
+int desfazer_insercao(fila_padrao *f, char id[10]) {
+    efila_padrao *atual = f->head;
+    efila_padrao *anterior = NULL;
+
+    while (atual != NULL) {
+        if (strcmp(atual->dados->rg, id) == 0) {
+            if (anterior == NULL) {
+                f->head = atual->proximo;
+                if (f->head == NULL) {
+                    f->tail = NULL;
+                }
+            } else {
+                anterior->proximo = atual->proximo;
+                if (atual->proximo == NULL) {
+                    f->tail = anterior;
+                }
+            }
+
+            free(atual);
+            f->quantidade--;
+            return 1;
+        }
+        anterior = atual;
+        atual = atual->proximo;
+    }
+    return 0;
+}
+
+void desfazer_operacao (fila_padrao *f, Pilha *p){
+    if (pilha_vazia(p)){
+        printf("Nenhuma operação para desfazer.\n");
+        return;
+    }
+    tipo_operacao ultima = desempilhar(p);
+    if (ultima.tipo_operacao == 0){
+        return;
+    }
+    printf("Desfazendo a operação: %s\n", ultima.tipo_operacao == inserir ? "Inserção" : "Remoção");
+    char confirmacao;
+    printf("Prosseguir com a remoção da última alteração? (s/n): ");
+    scanf("%c", &confirmacao);
+    if (confirmacao == 's' || confirmacao == 'S'){
+        desempilhar(p);
+
+        if (ultima.tipo_operacao == inserir){
+            desfazer_insercao(f, ultima.paciente.rg);
+            printf("Acao desfeita.\n");
+        }
+        if (ultima.tipo_operacao == remover){
+            Registro *copia = malloc(sizeof(Registro));
+            if (copia == NULL) {
+                printf("Erro de memória.\n");
+                empilhar(p, ultima);
+                return;
+            }
+            *copia = ultima.paciente;  
+            enfileirar_paciente(f, copia);
+        }
+    }
+    else {
+        return;
+    }
+}
+
+int main() {
+    Lista listaPacientes;
+    criarLista(&listaPacientes);
+
+    fila_padrao fila;
+    criar_fila(&fila);
+
+    fila_prioritaria fila_prioritaria;
+    inicio_fila_prioritaria(&fila_prioritaria);
+
+    Pilha Pilha;
+    inicia_pilha(&Pilha);
+
+    int opcaoPrincipal;
+    do {
+        menuPrincipal();
+        scanf("%d", &opcaoPrincipal);
+        getchar();
+
+        switch (opcaoPrincipal) {
+            case 1: {
+                int opcao_cadastro;
+                do {
+                    menuCadastro();
+                    scanf("%d", &opcao_cadastro);
+                    getchar();
+
+                    switch (opcao_cadastro) {
+                        case 1:
+                            cadastrarPaciente(&listaPacientes);
+                            break;
+                        case 2:
+                            consultarPaciente(&listaPacientes);
+                            break;
+                        case 3:
+                            mostrarLista(&listaPacientes);
+                            break;
+                        case 4:
+                            atualizarPaciente(&listaPacientes);
+                            break;
+                        case 5:
+                            removerPaciente(&listaPacientes);
+                            break;
+                        case 0:
+                            break;
+                        default:
+                            printf("Opção inválida.\n");
+                    }
+                } while (opcao_cadastro != 0);
+                break;
+            }
+            case 2: {
+                int opcao_atendimento;
+                do {
+                    menu_atendimento();
+                    scanf("%d", &opcao_atendimento);
+                    getchar();
+
+                    switch (opcao_atendimento) {
+                        case 1: {
+                            char rg[10];
+                            printf("Digite o RG do paciente para enfileira-lo: ");
+                            scanf("%s", rg);
+                            getchar();
+
+                            ELista *p = buscarPaciente(&listaPacientes, rg);
+                            if (p) {
+                                enfileirar_paciente(&fila, p->dados);
+                                tipo_operacao op;
+                                op.tipo_operacao = inserir;
+                                op.paciente = *p->dados;
+                                empilhar(&Pilha, op);
+                            } else {
+                                printf("Paciente não encontrado.\n");
+                            }
+                            break;
+                        }
+                        case 2: {
+                            Registro *atendido = desinfileirar_paciente(&fila);
+                            if(atendido) {
+                                printf("Paciente %s atendido.\n", atendido->nome);
+                                tipo_operacao op;
+                                op.tipo_operacao = remover;
+                                op.paciente = *atendido;
+                                empilhar(&Pilha, op);
+                            }
+                            break;
+                        }
+                        case 3:
+                            mostrar_fila(&fila);
+                            break;
+                        case 0:
+                            break;
+                        default:
+                            printf("Opção inválida.\n");
+                    }
+                } while (opcao_atendimento != 0);
+                break;
+            }
+            case 3: {
+                int opcao_atendimento_prioritario;
+                do {
+                    menu_atendimento_prioritario();
+                    scanf("%d", &opcao_atendimento_prioritario);
+                    getchar();
+
+                    switch (opcao_atendimento_prioritario) {
+                        case 1: {
+                            char rg[10];
+                            printf("Digite o RG do paciente para enfileira-lo: ");
+                            scanf("%s", rg);
+                            getchar();
+
+                            ELista *p = buscarPaciente(&listaPacientes, rg);
+                            if (p) {
+                                enfileirar_prioritario(&fila_prioritaria, p->dados);
+                            } else {
+                                printf("Paciente não encontrado.\n");
+                            }
+                            break;
+                        }
+                        case 2: {
+                            Registro *atendido = desinfileirar_prioritario(&fila_prioritaria);
+                            if(atendido) {
+                                printf("Paciente prioritário %s atendido.\n", atendido->nome);
+                            }
+                            break;
+                        }
+                        case 3:
+                            mostrar_fila_prioritaria(&fila_prioritaria);
+                            break;
+                        case 0:
+                            break;
+                        default:
+                            printf("Opção inválida.\n");
+                    }
+                } while (opcao_atendimento_prioritario != 0);
+                break;
+            }
+            case 4: {
+                int opcao_pesquisa;
+                do {
+                    menuPesquisa();
+                    scanf("%d", &opcao_pesquisa);
+                    getchar();
+
+                    switch (opcao_pesquisa) {
+                        case 1:
+                            mostraRegistroAno(&listaPacientes);
+                            break;
+                        case 2:
+                            mostraRegistroMes(&listaPacientes);
+                            break;
+                        case 3:
+                            mostraRegistroDia(&listaPacientes);
+                            break;
+                        case 4:
+                            mostraRegistroIdade(&listaPacientes);
+                            break;
+                        case 0:
+                            break;
+                        default:
+                            printf("Opção inválida.\n");
+                    }
+                } while (opcao_pesquisa != 0);
+                break;
+            }
+            case 5: {
+                int pilha_opcao;
+                do {
+                    Desfazer();
+                    scanf("%d", &pilha_opcao);
+                    getchar();
+
+                    switch(pilha_opcao) {
+                        case 1: {
+                            if(Pilha.topo == -1) {
+                                printf("Nenhuma operação para desfazer.\n");
+                            } else {
+                                printf("\n===== Operações realizadas =====\n");
+                                for (int i = Pilha.topo; i >= 0; i--) {
+                                    printf("[%d] %s - RG: %s\n", Pilha.limite[i].tipo_operacao,
+                                           Pilha.limite[i].tipo_operacao == 1 ? "Enfileirar" : "Desenfileirar",
+                                           Pilha.limite[i].paciente.rg);
+                                }
+                            }
+                            break;
+                        }
+                        case 2: {
+                            desfazer_operacao(&fila, &Pilha);
+                            break;
+                        }
+                        case 0: {
+                            break;
+                        }
+                        default:
+                            printf("Opção inválida.\n");
+                    }
+                } while (pilha_opcao != 0);
+                break;
+            }
+            case 6:
+                salvar_lista(&listaPacientes);
+                break;
+            case 7:
+                carregar_lista(&listaPacientes);
+                break;
+            case 8:
+                sobre();
+                break;
+            case 9:
+                limparLista(&listaPacientes);
+                break;
+            case 0:
+                printf("Encerrando o programa...\n");
+                break;
+            default:
+                printf("Opção inválida.\n");
+        }
+    } while (opcaoPrincipal != 0);
+
+    limparLista(&listaPacientes);
+    while(fila.head != NULL) {
+        desinfileirar_paciente(&fila);
+    }
+
+    return 0;
+}
