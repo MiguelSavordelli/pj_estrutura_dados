@@ -118,7 +118,7 @@ void in_ordem(EABB* raiz) {
         printf("\nNome: %s\n", raiz->dados->nome);
         printf("Idade: %d\n", raiz->dados->idade);
         printf("RG: %s\n", raiz->dados->rg);
-        printf("Data: %02d/%02d/%04d\n", raiz->dados->entrada.dia,
+        printf("Data: %2d/%2d/%4d\n", raiz->dados->entrada.dia,
                raiz->dados->entrada.mes, raiz->dados->entrada.ano);
         in_ordem(raiz->filhoDir);
     }
