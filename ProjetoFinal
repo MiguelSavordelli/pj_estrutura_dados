@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+//define Registro e as variaveis para utilizar na função
 typedef struct {
     char rg[10];
     char nome[100];
@@ -13,6 +14,7 @@ typedef struct {
     } entrada;
 } Registro;
 
+//define a arvore binaria
 typedef struct EABB {
     Registro* dados;  
     struct EABB* filhoEsq;
@@ -23,6 +25,7 @@ typedef struct {
     int qtde;
 } ABB;
 
+//define a lista
 typedef struct elista {
     Registro *dados;
     struct elista *proximo;
@@ -33,6 +36,7 @@ typedef struct lista {
     int qtde;
 } Lista;
 
+//define a fila
 typedef struct efila_padrao {
     Registro *dados;
     struct efila_padrao *proximo;
@@ -44,8 +48,10 @@ typedef struct fila_padrao {
     int quantidade;
 } fila_padrao;
 
+//define o limite de pacientes da fila prioritaria
 #define limite_prioridade 20
 
+//define a fila prioritaria
 typedef struct fila_prioritaria {
     Registro *heap[limite_prioridade];
     int tamanho;
@@ -58,16 +64,19 @@ typedef struct fila_prioritaria {
 //fica mais facil de entender do que colocar 1 e 2 no codigo
 #define pilha_limite 50
 
+//define o tipo de operação para pilha
 typedef struct{
     int tipo_operacao;
     Registro paciente;
 } tipo_operacao;
 
+//define a pilha
 typedef struct{
     tipo_operacao limite[pilha_limite];
     int topo;
 }Pilha;
 
+//Funcao usada fazer as comparacoes para a arvore binaria
 int compararRegistros(Registro p1, Registro p2, int criterio) {
     switch(criterio) {
         case 1: return p1.entrada.ano - p2.entrada.ano;
@@ -90,6 +99,7 @@ EABB* cria_vertice(Registro* paciente) {
     return novo;
 }
 
+//funcao para inserir paciente na arvore
 void inserirPacienteArvore(ABB* arvore, Registro* paciente, int criterio) {
     EABB* novo = cria_vertice(paciente);
     if(novo == NULL) return;
@@ -112,6 +122,7 @@ void inserirPacienteArvore(ABB* arvore, Registro* paciente, int criterio) {
     arvore->qtde++;
 }
 
+//funcao para ordenar os registros da arvore
 void in_ordem(EABB* raiz) {
     if (raiz != NULL) {
         in_ordem(raiz->filhoEsq);
@@ -124,6 +135,7 @@ void in_ordem(EABB* raiz) {
     }
 }
 
+//funcao para liberar a memoria da arvore utilizada
 void liberar_arvore(EABB* vertice) {
     if (vertice != NULL) {
         liberar_arvore(vertice->filhoEsq);
@@ -131,6 +143,8 @@ void liberar_arvore(EABB* vertice) {
         free(vertice);
     }
 }
+
+//funcao para mostrar a ordem requerida por ordem de ano
 void mostraRegistroAno(Lista* lista) {
     ABB arvore = {NULL, 0};
     ELista* atual = lista->inicio;
@@ -143,6 +157,7 @@ void mostraRegistroAno(Lista* lista) {
     liberar_arvore(arvore.raiz);
 }
 
+//funcoes para mostrar a ordem requerida por ordem de mes
 void mostraRegistroMes(Lista* lista) {
     ABB arvore = {NULL, 0};
     ELista* atual = lista->inicio;
@@ -155,6 +170,7 @@ void mostraRegistroMes(Lista* lista) {
     liberar_arvore(arvore.raiz);
 }
 
+//funcoes para mostrar a ordem requerida por ordem de dia
 void mostraRegistroDia(Lista* lista) {
     ABB arvore = {NULL, 0};
     ELista* atual = lista->inicio;
@@ -167,6 +183,7 @@ void mostraRegistroDia(Lista* lista) {
     liberar_arvore(arvore.raiz);
 }
 
+//funcoes para mostrar a ordem requerida por ordem de idade
 void mostraRegistroIdade(Lista* lista) {
     ABB arvore = {NULL, 0};
     ELista* atual = lista->inicio;
@@ -179,11 +196,13 @@ void mostraRegistroIdade(Lista* lista) {
     liberar_arvore(arvore.raiz);
 }
 
+//funcao para criar a lista
 void criarLista(Lista *l) {
     l->inicio = NULL;
     l->qtde = 0;
 }
 
+//funcao para cadastrar o paciente e salvar no arquivo txt
 void cadastrarPaciente(Lista *l) {
     Registro *r = (Registro *)malloc(sizeof(Registro));
     if(r == NULL) {
@@ -240,6 +259,7 @@ void cadastrarPaciente(Lista *l) {
     printf("Paciente cadastrado com sucesso!\n");
 }
 
+//funcao para mostrar a lista de pacientes cadastrados
 void mostrarLista(Lista *l) {
     ELista *aux = l->inicio;
     if (aux == NULL) {
@@ -265,6 +285,7 @@ ELista *buscarPaciente(Lista *l, char *id) {
     return NULL;
 }
 
+//funcao para consultar o paciente cadastrado
 void consultarPaciente(Lista *l) {
     char rg[10];
     printf("Digite o RG do paciente: ");
@@ -283,6 +304,7 @@ void consultarPaciente(Lista *l) {
     }
 }
 
+//funcao para atualizar os dados do paciente cadastrado
 void atualizarPaciente(Lista *l) {
     char rg[15];
     printf("Digite o RG do paciente a atualizar: ");
@@ -307,6 +329,7 @@ void atualizarPaciente(Lista *l) {
 }
 
 
+//funcao para remover o cadastro do paciente
 void removerPaciente(Lista *l) {
     char rg[10];
     printf("Digite o RG do paciente a remover: ");
@@ -338,12 +361,14 @@ void removerPaciente(Lista *l) {
     printf("Paciente removido com sucesso!\n");
 }
 
+//funcao para criar a fila
 void criar_fila(fila_padrao *f) {
     f->head = NULL;
     f->tail = NULL;
     f->quantidade = 0;
 }
 
+//funcao para enfileirar o paciente na fila comum
 void enfileirar_paciente(fila_padrao *f, Registro *r) {
     efila_padrao *novo = (efila_padrao *)malloc(sizeof(efila_padrao));
     if(novo == NULL) {
@@ -363,6 +388,7 @@ void enfileirar_paciente(fila_padrao *f, Registro *r) {
     printf("Paciente enfileirado.\n");
 }
 
+//funcao para desenfileirar o paciente da fila comum
 Registro *desinfileirar_paciente(fila_padrao *f) {
     if (f->head == NULL) {
         printf("A fila está vazia.\n");
@@ -382,6 +408,7 @@ Registro *desinfileirar_paciente(fila_padrao *f) {
     return r;
 }
 
+//funcao para mostrar a fila comum
 void mostrar_fila(fila_padrao *f) {
     efila_padrao *aux = f->head;
     if (aux == NULL) {
@@ -398,17 +425,19 @@ void mostrar_fila(fila_padrao *f) {
     }
 }
 
-// Funções de fila prioritária
+// funcao que inicia fila prioritária
 void inicio_fila_prioritaria(fila_prioritaria *f) {
     f->tamanho = 0;
 }
 
+// funcao que troca dois elementos de posição
 void trocar_heap(Registro **a, Registro **b) {
     Registro *temp = *a;
     *a = *b;
     *b = temp;
 }
 
+// funcao que enfileira paciente na fila prioritaria
 void enfileirar_prioritario(fila_prioritaria *f, Registro *r) {
     if (f->tamanho >= limite_prioridade) {
         printf("Fila prioritaria cheia.\n");
@@ -431,6 +460,7 @@ void enfileirar_prioritario(fila_prioritaria *f, Registro *r) {
     printf("Paciente enfileirado na fila prioritaria.\n");
 }
 
+// funcao que desenfileira paciente da fila prioritaria
 Registro *desinfileirar_prioritario(fila_prioritaria *f) {
     if(f->tamanho == 0) {
         printf("Fila prioritaria vazia.\n");
@@ -463,6 +493,7 @@ Registro *desinfileirar_prioritario(fila_prioritaria *f) {
     return maior;
 }
 
+// funcao que mostra a fila prioritaria
 void mostrar_fila_prioritaria(fila_prioritaria *f) {
     if (f->tamanho == 0) {
         printf("Fila prioritária vazia.\n");
@@ -477,7 +508,7 @@ void mostrar_fila_prioritaria(fila_prioritaria *f) {
     }
 }
 
-// Funções de arquivo
+//funcao para salvar as alteraçoes feitas no arquivo txt
 void salvar_lista(Lista* l) {
     FILE* arq = fopen("pacientes.txt", "w");
     if (arq == NULL) {
@@ -500,32 +531,44 @@ void salvar_lista(Lista* l) {
     printf("Pacientes salvos no arquivo com sucesso!\n");
 }
 
+//preciso tirar nao foi pedido
+void limparLista(Lista *l) {
+    ELista *atual = l->inicio;
+    while (atual != NULL) {
+        ELista *proximo = atual->proximo;
+        free(atual->dados);
+        free(atual);
+        atual = proximo;
+    }
+    l->inicio = NULL;
+    l->qtde = 0;
+}
+
+//funcao para carregar os dados do arquivo txt
 void carregar_lista(Lista *l) {
     FILE *arq = fopen("pacientes.txt", "r");
     if (arq == NULL) {
         printf("Nenhum arquivo encontrado para carregar.\n");
         return;
     }
+    limparLista(l);
 
-    while (!feof(arq)) {
+    while (1) {
         Registro *r = (Registro *)malloc(sizeof(Registro));
-        if(r == NULL) {
+        if (r == NULL) {
             printf("Erro ao alocar memória para registro\n");
             break;
         }
-
         if (fgets(r->rg, 10, arq) == NULL) {
-                free(r);
-                break;
+            free(r);
+            break;  
         }
-        fgetc(arq);
-
+        r->rg[strcspn(r->rg, "\n")] = '\0';
         if (fgets(r->nome, 100, arq) == NULL) {
             free(r);
             break;
         }
         r->nome[strcspn(r->nome, "\n")] = '\0';
-
         if (fscanf(arq, "%d", &r->idade) != 1 ||
             fscanf(arq, "%d", &r->entrada.dia) != 1 ||
             fscanf(arq, "%d", &r->entrada.mes) != 1 ||
@@ -533,10 +576,9 @@ void carregar_lista(Lista *l) {
             free(r);
             break;
         }
-        fgetc(arq);
-
+        while (fgetc(arq) != '\n' && !feof(arq));
         ELista *novo = (ELista *)malloc(sizeof(ELista));
-        if(novo == NULL) {
+        if (novo == NULL) {
             printf("Erro ao alocar memória para nó\n");
             free(r);
             break;
@@ -551,18 +593,7 @@ void carregar_lista(Lista *l) {
     printf("Pacientes carregados com sucesso!\n");
 }
 
-void limparLista(Lista *l) {
-    ELista *atual = l->inicio;
-    while (atual != NULL) {
-        ELista *proximo = atual->proximo;
-        free(atual->dados);
-        free(atual);
-        atual = proximo;
-    }
-    l->inicio = NULL;
-    l->qtde = 0;
-}
-
+//menu inicial 
 void menuPrincipal() {
     printf("\n======== Menu Principal ========\n");
     printf("1 - Cadastrar\n");
@@ -579,6 +610,7 @@ void menuPrincipal() {
     printf("Escolha: ");
 }
 
+//menu quando selecionado primeira opcao do menu inicial
 void menuCadastro() {
     printf("\n======= Menu de Cadastro =======\n");
     printf("1 - Cadastrar paciente\n");
@@ -591,6 +623,7 @@ void menuCadastro() {
     printf("Escolha: ");
 }
 
+//menu quando selecionado segunda opcao do menu inicial
 void menu_atendimento() {
     printf("\n====== Menu de Atendimento =====\n");
     printf("1 - Enfileirar paciente\n");
@@ -601,6 +634,7 @@ void menu_atendimento() {
     printf("Escolha: ");
 }
 
+//menu quando selecionado terceira opcao do menu inicial
 void menu_atendimento_prioritario() {
     printf("\n======= Menu de Atendimento Prioritário =======\n");
     printf("1 - Enfileirar Paciente Prioritariamente\n");
@@ -611,6 +645,7 @@ void menu_atendimento_prioritario() {
     printf("Escolha: ");
 }
 
+//menu quando selecionado oitava opcao do menu inicial
 void sobre() {
     printf("\n================ Sobre ================\n");
     printf("Autores: Miguel Yudi Sakurai Savordelli\n");
@@ -622,6 +657,7 @@ void sobre() {
     printf("=======================================\n");
 }
 
+//menu quando selecionado quinta opcao do menu inicial
 void Desfazer() {
     printf("\n====== Menu para desfazer ======\n");
     printf("1 - Operações realizadas\n");
@@ -631,6 +667,7 @@ void Desfazer() {
     printf("Escolha:");
 }
 
+//menu quando selecionado quarta opcao do menu inicial
 void menuPesquisa() {
     printf("\n======= Menu de Pesquisa =======\n");
     printf("1 - Mostrar ordenado por ano\n");
@@ -642,24 +679,29 @@ void menuPesquisa() {
     printf("Escolha: ");
 }
 
+//funcao para iniciar a pilha
 void inicia_pilha(Pilha *p){
     p->topo = -1;
 }
 
+//funcao para verificar se a pilha esta vazia
 int pilha_vazia(Pilha *p){
     return (p->topo == -1);
 }
 
+//funcao para verificar se a pilha esta cheia
 int pilha_cheia(Pilha *p){
     return (p->topo == pilha_limite - 1);
 }
 
+//funcao para empilhar acoes feitas na fila
 void empilhar(Pilha *p, tipo_operacao operacao){
     if (!pilha_cheia(p)){
         p->limite[++p->topo] = operacao;
     }
 }
 
+//funcao para desempilhar acoes
 tipo_operacao desempilhar(Pilha *p){
     tipo_operacao op_vazia = {0};
     if (!pilha_vazia(p)){
@@ -668,6 +710,7 @@ tipo_operacao desempilhar(Pilha *p){
     return op_vazia;
 }
 
+//funcao para desfazer a insercao feita na fila
 int desfazer_insercao(fila_padrao *f, char id[10]) {
     efila_padrao *atual = f->head;
     efila_padrao *anterior = NULL;
@@ -696,6 +739,7 @@ int desfazer_insercao(fila_padrao *f, char id[10]) {
     return 0;
 }
 
+//funcao para desfazer a ultima operacao feita na fila
 void desfazer_operacao (fila_padrao *f, Pilha *p){
     if (pilha_vazia(p)){
         printf("Nenhuma operação para desfazer.\n");
@@ -733,6 +777,7 @@ void desfazer_operacao (fila_padrao *f, Pilha *p){
 }
 
 int main() {
+    //chama as funcoes para iniciar as estruturas
     Lista listaPacientes;
     criarLista(&listaPacientes);
 
@@ -745,13 +790,15 @@ int main() {
     Pilha Pilha;
     inicia_pilha(&Pilha);
 
+    //inicia os menus e as opcoes para o usuario
     int opcaoPrincipal;
     do {
         menuPrincipal();
         scanf("%d", &opcaoPrincipal);
         getchar();
-
+        //limpa o buffer do teclado
         switch (opcaoPrincipal) {
+            //menu cadastro
             case 1: {
                 int opcao_cadastro;
                 do {
@@ -760,21 +807,27 @@ int main() {
                     getchar();
 
                     switch (opcao_cadastro) {
+                        //cadastrar paciente
                         case 1:
                             cadastrarPaciente(&listaPacientes);
                             break;
+                        //consultar paciente
                         case 2:
                             consultarPaciente(&listaPacientes);
                             break;
+                        //mostrar lista de pacientes cadastrados
                         case 3:
                             mostrarLista(&listaPacientes);
                             break;
+                        //atualizar paciente
                         case 4:
                             atualizarPaciente(&listaPacientes);
                             break;
+                        //remover paciente
                         case 5:
                             removerPaciente(&listaPacientes);
                             break;
+                        //voltar para o menu principal
                         case 0:
                             break;
                         default:
@@ -783,6 +836,7 @@ int main() {
                 } while (opcao_cadastro != 0);
                 break;
             }
+            //menu atendimento
             case 2: {
                 int opcao_atendimento;
                 do {
@@ -791,6 +845,7 @@ int main() {
                     getchar();
 
                     switch (opcao_atendimento) {
+                        //enfileirar paciente
                         case 1: {
                             char rg[10];
                             printf("Digite o RG do paciente para enfileira-lo: ");
@@ -809,6 +864,7 @@ int main() {
                             }
                             break;
                         }
+                        //desenfileirar paciente
                         case 2: {
                             Registro *atendido = desinfileirar_paciente(&fila);
                             if(atendido) {
@@ -820,9 +876,11 @@ int main() {
                             }
                             break;
                         }
+                        //mostrar fila de pacientes
                         case 3:
                             mostrar_fila(&fila);
                             break;
+                        //voltar para o menu principal
                         case 0:
                             break;
                         default:
@@ -831,6 +889,7 @@ int main() {
                 } while (opcao_atendimento != 0);
                 break;
             }
+            //menu atendimento prioritario
             case 3: {
                 int opcao_atendimento_prioritario;
                 do {
@@ -839,6 +898,7 @@ int main() {
                     getchar();
 
                     switch (opcao_atendimento_prioritario) {
+                        //enfileirar paciente na fila prioritaria
                         case 1: {
                             char rg[10];
                             printf("Digite o RG do paciente para enfileira-lo: ");
@@ -853,6 +913,7 @@ int main() {
                             }
                             break;
                         }
+                        //desenfileirar paciente da fila prioritaria
                         case 2: {
                             Registro *atendido = desinfileirar_prioritario(&fila_prioritaria);
                             if(atendido) {
@@ -860,9 +921,11 @@ int main() {
                             }
                             break;
                         }
+                        //mostrar fila prioritaria
                         case 3:
                             mostrar_fila_prioritaria(&fila_prioritaria);
                             break;
+                        //voltar para o menu principal
                         case 0:
                             break;
                         default:
@@ -871,6 +934,7 @@ int main() {
                 } while (opcao_atendimento_prioritario != 0);
                 break;
             }
+            //menu pesquisa
             case 4: {
                 int opcao_pesquisa;
                 do {
@@ -879,18 +943,23 @@ int main() {
                     getchar();
 
                     switch (opcao_pesquisa) {
+                        //mostrar pacientes cadastrados por ordem de ano
                         case 1:
                             mostraRegistroAno(&listaPacientes);
                             break;
+                        //mostrar pacientes cadastrados por ordem de mes
                         case 2:
                             mostraRegistroMes(&listaPacientes);
                             break;
+                        //mostrar pacientes cadastrados por ordem de dia
                         case 3:
                             mostraRegistroDia(&listaPacientes);
                             break;
+                        //mostrar pacientes cadastrados por ordem de idade
                         case 4:
                             mostraRegistroIdade(&listaPacientes);
                             break;
+                        //voltar para o menu principal
                         case 0:
                             break;
                         default:
@@ -899,6 +968,7 @@ int main() {
                 } while (opcao_pesquisa != 0);
                 break;
             }
+            //menu desfazer
             case 5: {
                 int pilha_opcao;
                 do {
@@ -907,6 +977,7 @@ int main() {
                     getchar();
 
                     switch(pilha_opcao) {
+                        //mostrar operacoes realizadas na fila
                         case 1: {
                             if(Pilha.topo == -1) {
                                 printf("Nenhuma operação para desfazer.\n");
@@ -920,10 +991,12 @@ int main() {
                             }
                             break;
                         }
+                        //desfazer a ultima operacao realizada na fila
                         case 2: {
                             desfazer_operacao(&fila, &Pilha);
                             break;
                         }
+                        //voltar para o menu principal
                         case 0: {
                             break;
                         }
@@ -933,18 +1006,23 @@ int main() {
                 } while (pilha_opcao != 0);
                 break;
             }
+            //salvar alteracoes feitas no arquivo txt
             case 6:
                 salvar_lista(&listaPacientes);
                 break;
+            //carregar dados do arquivo txt
             case 7:
                 carregar_lista(&listaPacientes);
                 break;
+            //mostrar informacoes 'sobre'
             case 8:
                 sobre();
                 break;
+            //limpa a lista de pacientes do arquivo txt
             case 9:
                 limparLista(&listaPacientes);
                 break;
+            //encerrar o programa
             case 0:
                 printf("Encerrando o programa...\n");
                 break;
@@ -952,7 +1030,7 @@ int main() {
                 printf("Opção inválida.\n");
         }
     } while (opcaoPrincipal != 0);
-
+    //libera a memoria utilizada
     limparLista(&listaPacientes);
     while(fila.head != NULL) {
         desinfileirar_paciente(&fila);
