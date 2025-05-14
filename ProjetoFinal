@@ -67,6 +67,7 @@ typedef struct fila_prioritaria {
 //define o tipo de operação para pilha
 typedef struct{
     int tipo_operacao;
+    int tipo_fila;
     Registro paciente;
 } tipo_operacao;
 
@@ -647,14 +648,15 @@ void menu_atendimento_prioritario() {
 
 //menu quando selecionado oitava opcao do menu inicial
 void sobre() {
-    printf("\n================ Sobre ================\n");
+    printf("\n================== Sobre ==================\n");
     printf("Autores: Miguel Yudi Sakurai Savordelli\n");
     printf("         & João Vitor de Freitas Daltoé\n");
-    printf("Ciclo: 7° Semestre\n");
-    printf("Curso: Engenharia de Automação e Controle\n");
+    printf("RA's:    11.122.007-5 & 11.122.093-5\n");
+    printf("Ciclo:   7° Semestre\n");
+    printf("Curso:   Engenharia de Automação e Controle\n");
     printf("Disciplina: Estrutura de Dados - CCA230\n");
-    printf("Data: Maio de 2025\n");
-    printf("=======================================\n");
+    printf("Data:    Maio de 2025\n");
+    printf("===========================================\n");
 }
 
 //menu quando selecionado quinta opcao do menu inicial
@@ -740,39 +742,65 @@ int desfazer_insercao(fila_padrao *f, char id[10]) {
 }
 
 //funcao para desfazer a ultima operacao feita na fila
-void desfazer_operacao (fila_padrao *f, Pilha *p){
-    if (pilha_vazia(p)){
+void desfazer_operacao(fila_padrao *f, fila_prioritaria *fp, Pilha *p) {
+    if (pilha_vazia(p)) {
         printf("Nenhuma operação para desfazer.\n");
         return;
     }
+
     tipo_operacao ultima = desempilhar(p);
-    if (ultima.tipo_operacao == 0){
+    if (ultima.tipo_operacao == 0) {
         return;
     }
-    printf("Desfazendo a operação: %s\n", ultima.tipo_operacao == inserir ? "Inserção" : "Remoção");
+
+    printf("Desfazendo a operação: %s na %s\n", 
+           ultima.tipo_operacao == inserir ? "Inserção" : "Remoção",
+           ultima.tipo_fila == 1 ? "Fila Padrão" : "Fila Prioritária");
+
     char confirmacao;
     printf("Prosseguir com a remoção da última alteração? (s/n): ");
-    scanf("%c", &confirmacao);
-    if (confirmacao == 's' || confirmacao == 'S'){
-        desempilhar(p);
+    scanf(" %c", &confirmacao);
+    getchar();
 
-        if (ultima.tipo_operacao == inserir){
-            desfazer_insercao(f, ultima.paciente.rg);
-            printf("Acao desfeita.\n");
-        }
-        if (ultima.tipo_operacao == remover){
-            Registro *copia = malloc(sizeof(Registro));
-            if (copia == NULL) {
-                printf("Erro de memória.\n");
-                empilhar(p, ultima);
-                return;
+    if (confirmacao == 's' || confirmacao == 'S') {
+        if (ultima.tipo_fila == 1) { 
+            if (ultima.tipo_operacao == inserir) {
+                desfazer_insercao(f, ultima.paciente.rg);
+            } else {
+                Registro *copia = malloc(sizeof(Registro));
+                if (copia == NULL) {
+                    printf("Erro de memória.\n");
+                    empilhar(p, ultima);
+                    return;
+                }
+                *copia = ultima.paciente;
+                enfileirar_paciente(f, copia);
             }
-            *copia = ultima.paciente;  
-            enfileirar_paciente(f, copia);
+        } else { // fila_prioritaria
+            if (ultima.tipo_operacao == inserir) {
+                for (int i = 0; i < fp->tamanho; i++) {
+                    if (strcmp(fp->heap[i]->rg, ultima.paciente.rg) == 0) {
+                        for (int j = i; j < fp->tamanho - 1; j++) {
+                            fp->heap[j] = fp->heap[j+1];
+                        }
+                        fp->tamanho--;
+                        break;
+                    }
+                }
+            } else {
+                Registro *copia = malloc(sizeof(Registro));
+                if (copia == NULL) {
+                    printf("Erro de memória.\n");
+                    empilhar(p, ultima);
+                    return;
+                }
+                *copia = ultima.paciente;
+                enfileirar_prioritario(fp, copia);
+            }
         }
-    }
-    else {
-        return;
+        printf("Ação desfeita.\n");
+    } else {
+        empilhar(p, ultima); 
     }
 }
 
@@ -856,6 +884,7 @@ int main() {
                             if (p) {
                                 enfileirar_paciente(&fila, p->dados);
                                 tipo_operacao op;
+                                op.tipo_fila = 1;
                                 op.tipo_operacao = inserir;
                                 op.paciente = *p->dados;
                                 empilhar(&Pilha, op);
@@ -871,6 +900,7 @@ int main() {
                                 printf("Paciente %s atendido.\n", atendido->nome);
                                 tipo_operacao op;
                                 op.tipo_operacao = remover;
+                                op.tipo_fila = 1;
                                 op.paciente = *atendido;
                                 empilhar(&Pilha, op);
                             }
@@ -905,21 +935,31 @@ int main() {
                             scanf("%s", rg);
                             getchar();
 
-                            ELista *p = buscarPaciente(&listaPacientes, rg);
-                            if (p) {
-                                enfileirar_prioritario(&fila_prioritaria, p->dados);
-                            } else {
+                                ELista *p = buscarPaciente(&listaPacientes, rg);
+                                if (p) {
+                                    enfileirar_prioritario(&fila_prioritaria, p->dados);
+                                    tipo_operacao op;
+                                    op.tipo_operacao = inserir;
+                                    op.tipo_fila = 2;  // 2 for fila_prioritaria
+                                    op.paciente = *p->dados;
+                                    empilhar(&Pilha, op);
+                                } else {
                                 printf("Paciente não encontrado.\n");
                             }
                             break;
                         }
                         //desenfileirar paciente da fila prioritaria
-                        case 2: {
-                            Registro *atendido = desinfileirar_prioritario(&fila_prioritaria);
-                            if(atendido) {
-                                printf("Paciente prioritário %s atendido.\n", atendido->nome);
-                            }
-                            break;
+                            case 2: {
+                                Registro *atendido = desinfileirar_prioritario(&fila_prioritaria);
+                                if(atendido) {
+                                    printf("Paciente prioritário %s atendido.\n", atendido->nome);
+                                    tipo_operacao op;
+                                    op.tipo_operacao = remover;
+                                    op.tipo_fila = 2;  // 2 for fila_prioritaria
+                                    op.paciente = *atendido;
+                                    empilhar(&Pilha, op);
+                                }
+                                break;
                         }
                         //mostrar fila prioritaria
                         case 3:
@@ -980,20 +1020,22 @@ int main() {
                         //mostrar operacoes realizadas na fila
                         case 1: {
                             if(Pilha.topo == -1) {
-                                printf("Nenhuma operação para desfazer.\n");
-                            } else {
-                                printf("\n===== Operações realizadas =====\n");
-                                for (int i = Pilha.topo; i >= 0; i--) {
-                                    printf("[%d] %s - RG: %s\n", Pilha.limite[i].tipo_operacao,
-                                           Pilha.limite[i].tipo_operacao == 1 ? "Enfileirar" : "Desenfileirar",
-                                           Pilha.limite[i].paciente.rg);
+                                    printf("Nenhuma operação para desfazer.\n");
+                                } else {
+                                    printf("\n===== Operações realizadas =====\n");
+                                    for (int i = Pilha.topo; i >= 0; i--) {
+                                        printf("[%d] %s - %s - RG: %s\n", 
+                                               Pilha.limite[i].tipo_operacao,
+                                               Pilha.limite[i].tipo_operacao == 1 ? "Enfileirar" : "Desenfileirar",
+                                               Pilha.limite[i].tipo_fila == 1 ? "Fila Padrão" : "Fila Prioritária",
+                                               Pilha.limite[i].paciente.rg);
+                                    }
                                 }
+                                break;
                             }
-                            break;
-                        }
                         //desfazer a ultima operacao realizada na fila
                         case 2: {
-                            desfazer_operacao(&fila, &Pilha);
+                            desfazer_operacao(&fila, &fila_prioritaria, &Pilha);
                             break;
                         }
                         //voltar para o menu principal
